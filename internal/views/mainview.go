@@ -9,6 +9,7 @@ func NewMainWindow() *widgets.QMainWindow {
 	// Create main window
 	window := widgets.NewQMainWindow(nil, 0)
 	window.SetMinimumSize2(320, 320)
+	window.Resize2(640, 640)
 	window.SetWindowTitle("Chess UI")
 
 	// create a regular widget
@@ -24,6 +25,7 @@ func NewMainWindow() *widgets.QMainWindow {
 
 	// add board view to window
 	widget.Layout().AddWidget(boardView)
+
 	widget.Layout().SetAlignment(boardView, core.Qt__AlignTop)
 	return window
 }

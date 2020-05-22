@@ -1,6 +1,8 @@
 package views
 
 import (
+	"strconv"
+
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
@@ -11,6 +13,7 @@ var (
 	border     = gui.NewQPen3(gui.NewQColor6("black"))
 	brushWhite = gui.NewQBrush()
 	brushBlack = gui.NewQBrush()
+	font       = gui.NewQFont5(gui.NewQFont())
 )
 
 func NewBoardView(widget *widgets.QWidget) *widgets.QGraphicsView {
@@ -31,21 +34,8 @@ func NewBoardView(widget *widgets.QWidget) *widgets.QGraphicsView {
 	// redraw the chess board on resize
 	boardView.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		drawBoard(boardScene, event.Size().Width(), event.Size().Height())
-		boardView.SetMinimumHeight(event.Size().Width())
+		boardView.SetMinimumHeight(event.Size().Width() + 2)
 	})
-	// boardView.ConnectPaintEvent(func(event *gui.QPaintEvent) {
-	// 	fmt.Println("Paint:", event.Type(), time.Now())
-	// 	boardView.SetMinimumSize2(event.Size().Width()+4, event.Size().Width()+4)
-	// 	drawBoard(boardScene, event.Size().Width(), event.Size().Height())
-	// 	boardView.SetScene(boardScene)
-	// })
-
-	// boardView.ConnectMouseMoveEvent(func(event *gui.QMouseEvent) {
-	// 	fmt.Println("MouseMove:", event.LocalPos().X(), event.LocalPos().Y())
-	// })
-	// boardView.ConnectResizeEvent(func(event *gui.QResizeEvent) {
-	// 	fmt.Println("Resize:", event.Size().Height(), event.Size().Width(), )
-	// })
 
 	boardView.Show()
 
@@ -62,12 +52,25 @@ func drawBoard(boardScene *widgets.QGraphicsScene, width int, height int) {
 	// border around board
 	boardScene.AddRect2(0, 0, boardSize, boardSize, border, brushWhite)
 
-	// squares
+	// squares size
 	squareSize := boardSize / 8
+	font.SetPixelSize(int(squareSize * 0.2))
+
+	// squares
 	for rank := 0; rank < 8; rank++ {
 		for file := 0; file < 8; file++ {
 			if (rank+file)%2 != 0 {
 				boardScene.AddRect2(float64(file)*squareSize, float64(rank)*squareSize, squareSize, squareSize, border, brushBlack)
+			}
+			if file == 0 {
+				t := boardScene.AddSimpleText(strconv.Itoa(8-rank), font)
+				t.SetX((float64(file) * squareSize) + (squareSize * 0.1))
+				t.SetY((float64(rank) * squareSize) + (squareSize * 0.1))
+			}
+			if rank == 7 {
+				t := boardScene.AddSimpleText(string('a'+file), font)
+				t.SetX((float64(file) * squareSize) + (squareSize * 0.75))
+				t.SetY((float64(rank) * squareSize) + (squareSize * 0.75))
 			}
 		}
 	}
