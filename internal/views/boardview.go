@@ -26,6 +26,9 @@ func NewBoardView(widget *widgets.QWidget) *widgets.QGraphicsView {
 
 	// pane for chess board
 	boardView := widgets.NewQGraphicsView(widget)
+	// boardView.SetStyleSheet("background: yellow")
+	boardView.SetHorizontalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
+	boardView.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
 
 	// scene to draw the chess board on
 	boardScene := widgets.NewQGraphicsScene(boardView)
@@ -34,7 +37,7 @@ func NewBoardView(widget *widgets.QWidget) *widgets.QGraphicsView {
 	// redraw the chess board on resize
 	boardView.ConnectResizeEvent(func(event *gui.QResizeEvent) {
 		drawBoard(boardScene, event.Size().Width(), event.Size().Height())
-		boardView.SetMinimumHeight(event.Size().Width() + 2)
+		boardView.SetFixedHeight(event.Size().Width() + 2)
 	})
 
 	boardView.Show()
@@ -44,7 +47,7 @@ func NewBoardView(widget *widgets.QWidget) *widgets.QGraphicsView {
 
 func drawBoard(boardScene *widgets.QGraphicsScene, width int, height int) {
 
-	boardSize := float64(width)
+	boardSize := float64(width) - 1
 
 	// clear boardScene and add all children again
 	boardScene.Clear()
