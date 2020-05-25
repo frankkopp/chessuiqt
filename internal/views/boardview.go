@@ -1,13 +1,15 @@
 package views
 
 import (
-	"log"
 	"strconv"
 
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/svg"
 	"github.com/therecipe/qt/widgets"
+
+	"github.com/frankkopp/FrankyGo/pkg/position"
+	"github.com/frankkopp/FrankyGo/pkg/types"
 )
 
 const (
@@ -21,14 +23,29 @@ var (
 	brushBlack = gui.NewQBrush()
 	font       = gui.NewQFont5(gui.NewQFont())
 	pieces     = make([]*gui.QImage, 0)
-	piecesSvg  = make([]*svg.QGraphicsSvgItem, 0)
+	piecesSvg  = make([]*svg.QSvgRenderer, 0)
 )
 
-func NewBoardView(widget *widgets.QWidget) *widgets.QGraphicsView {
+type BoardView struct {
+	boardView  *widgets.QGraphicsView
+	boardScene *widgets.QGraphicsScene
+	position   *position.Position
+}
 
-	if len(pieces) == 0 {
-		readPiecePixmaps()
-	}
+// NewBoardView Creates a board view and its data structure.
+func NewBoardView(widget *widgets.QWidget) *BoardView {
+	bv := &BoardView{}
+	bv.newBoardView(widget)
+	bv.position = position.NewPosition()
+	return bv
+}
+
+// View returns the view of the board view
+func (b *BoardView) View() *widgets.QGraphicsView {
+	return b.boardView
+}
+
+func (b *BoardView) newBoardView(widget *widgets.QWidget) {
 
 	// setup colors
 	brushWhite.SetColor(gui.NewQColor6("white"))
@@ -37,106 +54,106 @@ func NewBoardView(widget *widgets.QWidget) *widgets.QGraphicsView {
 	brushBlack.SetStyle(core.Qt__SolidPattern)
 
 	// pane for chess board
-	boardView := widgets.NewQGraphicsView(widget)
-	boardView.SetStyleSheet("background: yellow")
-	boardView.SetHorizontalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
-	boardView.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
+	b.boardView = widgets.NewQGraphicsView(widget)
+	b.boardView.SetStyleSheet("background: yellow")
+	b.boardView.SetHorizontalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
+	b.boardView.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
 
 	// scene to draw the chess board on
-	boardScene := widgets.NewQGraphicsScene(boardView)
-	boardView.SetScene(boardScene)
-	boardView.SetMinimumSize2(int(boardScene.Width()), int(boardScene.Height()))
+	b.boardScene = widgets.NewQGraphicsScene(b.boardView)
+	b.boardView.SetScene(b.boardScene)
+	b.boardView.SetMinimumSize2(int(b.boardScene.Width()), int(b.boardScene.Height()))
+
+	if len(pieces) == 0 {
+		b.readPiecePixmaps()
+	}
 
 	// redraw the chess board on resize
-	boardView.ConnectResizeEvent(func(event *gui.QResizeEvent) {
-		drawBoard(boardScene, event.Size().Width(), event.Size().Height())
-		boardView.SetFixedHeight(event.Size().Width() + 2)
+	b.boardView.ConnectResizeEvent(func(event *gui.QResizeEvent) {
+		b.drawBoard(event.Size().Width(), event.Size().Height())
+		b.boardView.SetFixedHeight(event.Size().Width() + 2)
 	})
 
-	boardView.Show()
-
-	return boardView
+	b.boardView.Show()
 }
 
-func drawBoard(boardScene *widgets.QGraphicsScene, width int, height int) {
+func (b *BoardView) drawBoard(width int, height int) {
 
 	boardSize := float64(width) - 1
 
-	// clear boardScene and add all children again
-	if len(boardScene.Children()) > 0 {
-		for _, svgItem := range piecesSvg {
-			if svgItem != nil {
-				boardScene.RemoveItem(svgItem)
-			}
-		}
-		boardScene.Clear()
-	}
+	// Clear boardScene and add all children again
+	b.boardScene.Clear()
 
 	// border around board
-	boardScene.AddRect2(0, 0, boardSize, boardSize, border, brushWhite)
+	b.boardScene.AddRect2(0, 0, boardSize, boardSize, border, brushWhite)
 
 	// squares size
 	squareSize := boardSize / 8
-	font.SetPixelSize(int(squareSize * 0.2))
+	fontSize := int(squareSize * 0.15)
 
 	// squares
-	for rank := 0; rank < 8; rank++ {
-		for file := 0; file < 8; file++ {
-			if (rank+file)%2 != 0 {
-				boardScene.AddRect2(float64(file)*squareSize, float64(rank)*squareSize, squareSize, squareSize, border, brushBlack)
+	for rank := 8; rank >= 1; rank-- {
+		for file := 1; file <= 8; file++ {
+			font.SetPixelSize(fontSize)
+			// checkers
+			if (rank+file)%2 == 0 {
+				rect := b.boardScene.AddRect2(float64(file-1)*squareSize, float64(8-rank)*squareSize, squareSize, squareSize, border, brushBlack)
+				rect.SetZValue(0.0)
 			}
-			if file == 0 {
-				t := boardScene.AddSimpleText(strconv.Itoa(8-rank), font)
-				t.SetX((float64(file) * squareSize) + (squareSize * 0.1))
-				t.SetY((float64(rank) * squareSize) + (squareSize * 0.1))
+			// rank number
+			if file == 1 {
+				t := b.boardScene.AddSimpleText(strconv.Itoa(rank), font)
+				t.SetX((float64(file-1) * squareSize) + (squareSize * 0.05))
+				t.SetY((float64(8-rank) * squareSize) + (squareSize * 0.05))
 			}
-			if rank == 7 {
-				t := boardScene.AddSimpleText(string('a'+file), font)
-				t.SetX((float64(file) * squareSize) + (squareSize * 0.75))
-				t.SetY((float64(rank) * squareSize) + (squareSize * 0.75))
+			// file letter
+			if rank == 1 {
+				t := b.boardScene.AddSimpleText(string('a'+file-1), font)
+				t.SetX((float64(file-1) * squareSize) + (squareSize * 0.85))
+				t.SetY((float64(8-rank) * squareSize) + (squareSize * 0.80))
 			}
-		}
-	}
+			// debug - square index numbers
+			font.SetPixelSize(fontSize / 2)
+			square := (rank-1)*8 + file - 1
+			t := b.boardScene.AddSimpleText(strconv.Itoa(square), font)
+			t.SetX((float64(file-1) * squareSize) + (squareSize * 0.8))
+			t.SetY((float64(8-rank) * squareSize) + (squareSize * 0.05))
 
-	for i, qImage := range pieces {
-		if qImage == nil {
-			continue
-		}
-		scaledImage := qImage.SmoothScaled(80, 80)
-		pixmap := gui.NewQPixmap().FromImage(scaledImage, 0)
-		p := boardScene.AddPixmap(pixmap)
-		p.SetX(float64(i * 50))
-		p.SetY(20)
-		p.Show()
-	}
+			// pieces for current position
+			piece := b.position.GetPiece(types.Square(square))
+			if piece != types.PieceNone {
+				svgItem := svg.NewQGraphicsSvgItem(nil)
+				svgRenderer := piecesSvg[piece]
+				height := float64(svgRenderer.DefaultSize().Height())
+				width := float64(svgRenderer.DefaultSize().Width())
+				svgItem.SetSharedRenderer(svgRenderer)
 
-	for i, svgItem := range piecesSvg {
-		if svgItem == nil {
-			continue
+				scaleFactor := squareSize / height * (0.9)
+				svgItem.SetScale(scaleFactor)
+
+				offsetX := height * 0.5 * scaleFactor
+				offsetY := width * 0.5 * scaleFactor
+				svgItem.SetX((float64(file-1) * squareSize) + (squareSize * 0.5) - offsetX)
+				svgItem.SetY((float64(8-rank) * squareSize) + (squareSize * 0.5) - offsetY)
+				svgItem.SetZValue(1.0)
+				svgItem.Show()
+				b.boardScene.AddItem(svgItem)
+			}
 		}
-		svgItem.SetScale(1.5)
-		svgItem.SetX(float64(i * 50))
-		svgItem.SetY(150)
-		boardScene.AddItem(svgItem)
 	}
 }
 
-func readPiecePixmaps() {
+func (b *BoardView) readPiecePixmaps() {
 	// (" KPNBRQ- kpnbrq-")
 	piecesFileNames := []string{"", "wK", "wP", "wN", "wB", "wR", "wQ", "", "", "bK", "bP", "bN", "bB", "bR", "bQ", ""}
 	for _, piece := range piecesFileNames {
 		if piece == "" {
-			pieces = append(pieces, nil)
 			piecesSvg = append(piecesSvg, nil)
 			continue
 		}
 		filePath := pieceImagePath + piece + ".svg"
-		image := gui.NewQImage9(filePath, "")
-		imageSvg := svg.NewQGraphicsSvgItem2(filePath, nil)
-		if image.IsNull() {
-			log.Panicf("Can't read piece image from %s", filePath)
-		}
-		pieces = append(pieces, image)
-		piecesSvg = append(piecesSvg, imageSvg)
+		renderer := svg.NewQSvgRenderer(nil)
+		renderer.Load(filePath)
+		piecesSvg = append(piecesSvg, renderer)
 	}
 }

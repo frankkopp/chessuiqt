@@ -27,8 +27,8 @@ func NewMainWindow() *widgets.QMainWindow {
 	// scrollArea.SetWidget(boardView)
 
 	// add board view to window
-	widget.Layout().AddWidget(boardView)
-	widget.Layout().SetAlignment(boardView, core.Qt__AlignTop)
+	widget.Layout().AddWidget(boardView.View())
+	widget.Layout().SetAlignment(boardView.View(), core.Qt__AlignTop)
 
 	window.SetCentralWidget(widget)
 	return window
