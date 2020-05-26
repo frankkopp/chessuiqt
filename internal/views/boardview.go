@@ -1,6 +1,7 @@
 package views
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/therecipe/qt/core"
@@ -8,6 +9,7 @@ import (
 	"github.com/therecipe/qt/svg"
 	"github.com/therecipe/qt/widgets"
 
+	"github.com/frankkopp/FrankyGo/pkg/movegen"
 	"github.com/frankkopp/FrankyGo/pkg/position"
 	"github.com/frankkopp/FrankyGo/pkg/types"
 )
@@ -30,6 +32,7 @@ type BoardView struct {
 	boardView  *widgets.QGraphicsView
 	boardScene *widgets.QGraphicsScene
 	position   *position.Position
+	movegen    *movegen.Movegen
 }
 
 // NewBoardView Creates a board view and its data structure.
@@ -37,6 +40,7 @@ func NewBoardView(widget *widgets.QWidget) *BoardView {
 	bv := &BoardView{}
 	bv.newBoardView(widget)
 	bv.position = position.NewPosition()
+	bv.movegen = movegen.NewMoveGen()
 	return bv
 }
 
@@ -127,17 +131,36 @@ func (b *BoardView) drawBoard(width int, height int) {
 				height := float64(svgRenderer.DefaultSize().Height())
 				width := float64(svgRenderer.DefaultSize().Width())
 				svgItem.SetSharedRenderer(svgRenderer)
-
+				// piece size relative to square size
 				scaleFactor := squareSize / height * (0.9)
 				svgItem.SetScale(scaleFactor)
-
+				// piece pos relative to top left corner of square
 				offsetX := height * 0.5 * scaleFactor
 				offsetY := width * 0.5 * scaleFactor
 				svgItem.SetX((float64(file-1) * squareSize) + (squareSize * 0.5) - offsetX)
 				svgItem.SetY((float64(8-rank) * squareSize) + (squareSize * 0.5) - offsetY)
+				// make sure pieces are in foreground
 				svgItem.SetZValue(1.0)
 				svgItem.Show()
 				b.boardScene.AddItem(svgItem)
+
+				svgItem.ConnectMousePressEvent(func(event *widgets.QGraphicsSceneMouseEvent) {
+					fmt.Println("Mouse Press", event.Button(), event.Modifiers(), event.ScenePos().X(), event.ScenePos().Y())
+					clickOffsetX := event.Pos().X()
+					clickOffsetY := event.Pos().Y()
+					fmt.Println("Mouse Press Piece", event.Button(), event.Modifiers(), clickOffsetX, clickOffsetY)
+				})
+				svgItem.ConnectMouseMoveEvent(func(event *widgets.QGraphicsSceneMouseEvent) {
+					fmt.Println("Mouse Move", event.Button(), event.Modifiers(), event.ScenePos().X(), event.ScenePos().Y())
+					clickOffsetX := event.Pos().X()
+					clickOffsetY := event.Pos().Y()
+					fmt.Println("Mouse Move Piece", event.Button(), event.Modifiers(), clickOffsetX, clickOffsetY)
+
+					svgItem.SetPos2(event.ScenePos().X()-width*0.5, event.ScenePos().Y()-height*0.5)
+				})
+				svgItem.ConnectMouseReleaseEvent(func(event *widgets.QGraphicsSceneMouseEvent) {
+					fmt.Println("Mouse Release", event.Button(), event.Modifiers(), event.ScenePos().X(), event.ScenePos().Y())
+				})
 			}
 		}
 	}
