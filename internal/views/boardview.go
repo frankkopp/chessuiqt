@@ -35,8 +35,9 @@ type BoardView struct {
 	boardPane      *widgets.QWidget
 	boardView      *widgets.QGraphicsView
 	boardScene     *widgets.QGraphicsScene
-	nextPlayerView *widgets.QLabel
 	fenView        *widgets.QLineEdit
+	boardDetail    *widgets.QWidget
+	nextPlayerView *widgets.QLabel
 
 	board      *board.Board
 	dragFlag   bool
@@ -69,9 +70,18 @@ func (b *BoardView) newBoardView(widget *widgets.QWidget) {
 
 	// next player view
 	b.nextPlayerView = widgets.NewQLabel(nil, 0)
+	b.nextPlayerView.SetContentsMargins(5, 0, 5, 0)
 	b.nextPlayerView.SetText("Next Player: White")
 	b.nextPlayerView.SetStyleSheet("background: white; color: black")
 	b.nextPlayerView.ConnectMousePressEvent(b.nextPlayerFlipEvent)
+
+	// row for details of fen
+	b.boardDetail = widgets.NewQWidget(nil, 0)
+	b.boardDetail.SetLayout(widgets.NewQHBoxLayout2(nil))
+	b.boardDetail.Layout().SetContentsMargins(0, 0, 0, 0)
+	b.boardDetail.Layout().SetAlignment2(b.boardDetail.Layout(), core.Qt__AlignLeft)
+	b.boardDetail.Layout().AddWidget(b.nextPlayerView)
+	b.boardDetail.Layout().AddItem(widgets.NewQSpacerItem(0, 0, widgets.QSizePolicy__MinimumExpanding, widgets.QSizePolicy__Ignored))
 
 	// scene to draw the chess board on
 	b.boardScene = widgets.NewQGraphicsScene(nil)
@@ -91,11 +101,10 @@ func (b *BoardView) newBoardView(widget *widgets.QWidget) {
 	b.boardPane.Layout().SetSizeConstraint(widgets.QLayout__SetMinimumSize)
 	b.boardPane.Layout().AddWidget(b.boardView)
 	b.boardPane.Layout().AddWidget(b.fenView)
-	b.boardPane.Layout().AddWidget(b.nextPlayerView)
+	b.boardPane.Layout().AddWidget(b.boardDetail)
 
 	// redraw the chess board on resize
 	b.boardView.ConnectResizeEvent(b.resizeEvent)
-
 }
 
 func (b *BoardView) resizeEvent(event *gui.QResizeEvent) {

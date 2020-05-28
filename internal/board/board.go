@@ -303,6 +303,10 @@ func (b *Board) FlipNextPlayer() {
 	b.nextPlayer = b.nextPlayer.Flip()
 }
 
+func (b *Board) HalfMoveClock() int {
+	return b.halfmoveclock
+}
+
 // String returns a string representing the board instance. This
 // includes the fen, a board matrix, game phase, material and pos values.
 func (b *Board) String() string {
@@ -333,4 +337,8 @@ func (b *Board) StringBoard() string {
 		os.WriteString("|\n+---+---+---+---+---+---+---+---+\n")
 	}
 	return os.String()
+}
+
+func (b *Board) SetHalfMoveClock(i int) {
+	b.halfmoveclock = i
 }
