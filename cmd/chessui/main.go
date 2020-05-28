@@ -12,6 +12,7 @@ func main() {
 
 	// needs to be called once before you can start using the QWidgets
 	app := widgets.NewQApplication(len(os.Args), os.Args)
+	app.SetStyle2("fusion")
 
 	// create a window
 	window := views.NewMainWindow()
