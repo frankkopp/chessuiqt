@@ -15,7 +15,7 @@ func main() {
 	app.SetStyle2("fusion")
 
 	// create a window
-	window := views.NewMainWindow()
+	window := views.NewMainWindow(app)
 
 	// make the window visible
 	window.Show()

@@ -88,12 +88,13 @@ func (b *BoardView) newBoardView(widget *widgets.QWidget) {
 
 	// view for chess board
 	b.boardView = widgets.NewQGraphicsView(nil)
+	b.boardView.SetFrameStyle(int(widgets.QFrame__Sunken) | int(widgets.QFrame__StyledPanel))
 	b.boardView.SetStyleSheet("background: yellow")
 	b.boardView.SetHorizontalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
 	b.boardView.SetVerticalScrollBarPolicy(core.Qt__ScrollBarAlwaysOff)
 	b.boardView.SetScene(b.boardScene)
 
-	// place the board view and fenView onto the board pane
+	// place the board view, fenView and detail row onto the board pane
 	b.boardPane = widgets.NewQWidget(widget, 0)
 	b.boardPane.SetStyleSheet("background: blue")
 	b.boardPane.SetLayout(widgets.NewQVBoxLayout2(nil))
@@ -102,9 +103,28 @@ func (b *BoardView) newBoardView(widget *widgets.QWidget) {
 	b.boardPane.Layout().AddWidget(b.boardView)
 	b.boardPane.Layout().AddWidget(b.fenView)
 	b.boardPane.Layout().AddWidget(b.boardDetail)
+	b.boardPane.ConnectKeyPressEvent(b.copyPasteEvent)
 
 	// redraw the chess board on resize
 	b.boardView.ConnectResizeEvent(b.resizeEvent)
+}
+
+func (b *BoardView) copyPasteEvent(event *gui.QKeyEvent) {
+	if event.Matches(gui.QKeySequence__Copy) {
+		app.Clipboard().SetText(b.board.ToFen(), gui.QClipboard__Clipboard)
+		statusbar.ShowMessage("Copied fen to clipboard", 2000)
+
+	}
+	if event.Matches(gui.QKeySequence__Paste) {
+		if app.Clipboard().MimeData(gui.QClipboard__Clipboard).HasText() {
+			statusbar.ShowMessage("Paste fen OK", 2000)
+			err := b.newFen(app.Clipboard().MimeData(gui.QClipboard__Clipboard).Text())
+			if err == nil {
+				return
+			}
+		}
+		statusbar.ShowMessage("Paste: No valid fen in clipboard", 2000)
+	}
 }
 
 func (b *BoardView) resizeEvent(event *gui.QResizeEvent) {
@@ -250,13 +270,17 @@ func (b *BoardView) editTextEvent(text string) {
 }
 
 func (b *BoardView) newFenEvent() {
-	fen := b.fenView.Text()
+	_ = b.newFen(b.fenView.Text())
+}
+
+func (b *BoardView) newFen(fen string) error {
 	_, err := board.NewBoardFen(fen)
 	if err == nil {
 		_ = b.board.FromFen(fen)
 		b.drawBoard()
-		return
+		return nil
 	}
+	return err
 }
 
 func (b *BoardView) nextPlayerFlipEvent(event *gui.QMouseEvent) {
